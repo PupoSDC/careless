@@ -1,12 +1,12 @@
 package com.careless.repository;
 
 import com.careless.model.Conversation;
-import java.util.List;
-import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
+import org.springframework.data.mongodb.repository.ReactiveMongoRepository;
+import reactor.core.publisher.Mono;
 
-public interface ConversationRepository extends MongoRepository<Conversation, String> {
+public interface ConversationRepository extends ReactiveMongoRepository<Conversation, String> {
 
-  @Query("{participants: ?0}")
-  List<Conversation> findByParticipant(String participant);
+  @Query("{'id': ?0, 'participants': {$elemMatch: {id: ?1}}}")
+  Mono<Conversation> findByIdAndUserAsParticipant(String conversationId, String personId);
 }

@@ -1,0 +1,22 @@
+version: '3'
+services:
+  careless:
+    image: gradle:6.4.1-jdk11
+    working_dir: /app
+    ports:
+      - 8000:8000
+      - 8080:8080
+    volumes:
+      - ./:/app
+    command: sh ./hotReloadSpring.sh
+  webapp:
+    image: node:12.13
+    working_dir: /home/node/app
+    user: node
+    ports:
+      - 3000:3000
+    volumes:
+      - "./src/main/webapp:/home/node/app"
+    environment:
+      CI: "true"
+    command: sh -c "npm install && npm run start"

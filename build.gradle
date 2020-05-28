@@ -2,7 +2,9 @@ plugins {
 	id 'org.springframework.boot' version '2.3.0.RELEASE'
 	id 'io.spring.dependency-management' version '1.0.9.RELEASE'
 	id 'com.github.sherter.google-java-format' version '0.8'
+  id 'com.github.node-gradle.node' version '2.2.4'
 	id 'java'
+  id 'base'
 }
 
 group = 'com.careless'
@@ -41,6 +43,29 @@ dependencies {
 	testImplementation 'org.springframework.security:spring-security-test'
 }
 
+node {
+  download = true
+  version = '12.13.0'
+  workDir = file('${project.buildDir}/nodejs')
+  npmWorkDir = file('${project.buildDir}/npm')
+  nodeModulesDir = file('${project.projectDir}/src/main/webapp')
+}
+
+task npmBuildProd(type: NpmTask, dependsOn: 'npmInstall') {
+  args = ['run', 'build']
+}
+
+task copyWebApp(type: Copy) {
+  from "${project.projectDir}/src/main/webapp/build"
+  into "${project.buildDir}/resources/main/static/."
+}
+
 test {
 	useJUnitPlatform()
+}
+
+clean {
+  delete "${project.projectDir}/src/main/webapp/node_modules"
+  delete "${project.projectDir}/src/main/webapp/coverage"
+  delete "${project.projectDir}/src/main/webapp/build"
 }
