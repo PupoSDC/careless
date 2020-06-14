@@ -10,6 +10,7 @@ export type Message = {
 
 export type Conversation = {
   id: string,
+  name: string,
   participants: User[],
   messages: Message[],
 }

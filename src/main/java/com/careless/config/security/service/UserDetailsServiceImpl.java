@@ -8,7 +8,7 @@ import com.careless.model.Person;
 import com.careless.model.Role;
 import com.careless.model.Role.EROLE;
 import com.careless.repository.RoleRepository;
-import com.careless.repository.UserRepository;
+import com.careless.repository.PersonRepository;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -27,7 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserDetailsServiceImpl implements UserDetailsService {
-  @Autowired UserRepository userRepository;
+  @Autowired
+  PersonRepository userRepository;
   @Autowired AuthenticationManager authenticationManager;
   @Autowired JwtUtils jwtUtils;
   @Autowired PasswordEncoder encoder;

@@ -1,87 +1,64 @@
 package com.careless.service;
 
-import com.careless.config.security.service.UserDetailsImpl;
-import com.careless.exceptions.rest.ConversationNotFoundException;
-import com.careless.exceptions.rest.PersonNotFoundException;
+import com.careless.exceptions.rest.ConversationAlreadyExistsException;
 import com.careless.model.Conversation;
 import com.careless.model.Message;
 import com.careless.model.Person;
 import com.careless.repository.ConversationRepository;
-import com.careless.repository.UserRepository;
-import java.util.ArrayList;
-import java.util.Arrays;
+import com.careless.repository.MessageRepository;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
-import javax.validation.constraints.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 
 @Service
 public class ConversationService {
+  @Autowired private MessageRepository reactiveMessageRepository;
   @Autowired private ConversationRepository conversationRepository;
-  @Autowired private UserRepository userRepository;
+  @Autowired private PersonService personService;
 
-  public void createNewConversation(List<String> participantIds) {
-    var participants =
-        participantIds
-            .stream()
-            .map(participantId -> userRepository.findById(participantId))
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .collect(Collectors.toList());
-    var newConversation = new Conversation().setParticipants(participantIds);
-    conversationRepository
-        .save(newConversation)
-        .doOnSuccess(conversation -> addNewCoversationToParticipants(conversation, participants))
-        .subscribe();
+  public void createNewConversationForParticipants(List<Person> participants, String name) {
+    var participantIds = participants
+        .stream()
+        .map(Person::getId)
+        .collect(Collectors.toList());
+    createNewConversationForParticipantIds(participantIds, name);
   }
 
-  public List<Conversation> getConversationsFromUserId(String userId) {
-    return userRepository.findById(userId)
-        .orElseThrow(() -> new PersonNotFoundException(userId))
-        .getConversations();
-  }
-  public Mono<Conversation> findConversation(@NotNull String conversationId, Authentication user) {
-    var currentUserId = ((UserDetailsImpl) user.getPrincipal()).getId();
-    return conversationRepository
-        .findByIdAndUserAsParticipant(conversationId, currentUserId)
-        .switchIfEmpty(Mono.error(new ConversationNotFoundException(conversationId)));
+  public List<Conversation> findConversationsOfCurrentUser(Authentication authentication) {
+    var currentUser = personService.getCurrentUserFromAuthentication(authentication);
+    return conversationRepository.findByParticipantsContaining(currentUser.getId());
   }
 
-  public void saveNewMessageToConversation(
-      @NotNull String conversationId, @NotNull String text, Authentication user) {
-    var currentUserId = ((UserDetailsImpl) user.getPrincipal()).getId();
+  public Conversation findConversationById(String id) {
+    return conversationRepository.findConversationById(id);
+  }
+
+  public void saveMessageToConversation(String conversationId, String messageText, Authentication authentication) {
+    var currentUser = personService.getCurrentUserFromAuthentication(authentication);
     var message = new Message()
-        .setDate(new Date())
-        .setText(text)
-        .setSender(currentUserId);
-    conversationRepository
-        .findByIdAndUserAsParticipant(conversationId, currentUserId)
-        .switchIfEmpty(Mono.error(new ConversationNotFoundException(conversationId)))
-        .doOnSuccess(
-            conversation -> {
-              conversation.getMessages().add(message);
-              conversationRepository.save(conversation);
-            })
-        .subscribe();
+        .setSender(currentUser.getId())
+        .setText(messageText)
+        .setDate(new Date());
+
+    reactiveMessageRepository.saveMessage(message, conversationId);
   }
 
-  private void addNewCoversationToParticipants(
-      Conversation newConversation,
-      List<Person> participants) {
-    participants.forEach(participant -> {
-      List<Conversation> conversations = Optional
-          .ofNullable(participant.getConversations())
-          .orElse(Collections.emptyList());
-      List<Conversation> newConversations = new ArrayList<>(conversations);
-      newConversations.add(newConversation);
-      participant.setConversations(newConversations);
-      userRepository.save(participant);
-    });
+  private void createNewConversationForParticipantIds(List<String> participantIds, String name) {
+    if (isUniqueConversation(name)) {
+      throw new ConversationAlreadyExistsException(name);
+    }
+    var newConversation = new Conversation()
+        .setParticipants(participantIds)
+        .setName(name)
+        .setMessages(Collections.emptyList());
+    conversationRepository.save(newConversation);
+  }
+
+  private boolean isUniqueConversation(String name) {
+    return conversationRepository.existsByName(name);
   }
 }

@@ -7,4 +7,12 @@ module.exports = function(app) {
       changeOrigin: true,
     })
   );
+  // Does not work: https://github.com/facebook/create-react-app/issues/5280
+  // app.use(
+  //   '/ws',
+  //   createProxyMiddleware({
+  //     target: 'ws://localhost:8080',
+  //     ws: true,
+  //   })
+  // );
 };

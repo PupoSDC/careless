@@ -6,6 +6,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Size;
 import lombok.Data;
 import lombok.experimental.Accessors;
+import net.minidev.json.annotate.JsonIgnore;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.IndexDirection;
 import org.springframework.data.mongodb.core.index.Indexed;
@@ -24,10 +25,11 @@ public class Person {
   private String username;
 
   @NotBlank
+  @JsonIgnore
   @Size(min = 8, max = 126)
   private String password;
 
-  @DBRef private Set<Role> roles;
-
-  @DBRef private List<Conversation> conversations;
+  @DBRef
+  @JsonIgnore
+  private Set<Role> roles;
 }

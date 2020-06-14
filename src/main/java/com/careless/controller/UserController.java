@@ -2,9 +2,9 @@ package com.careless.controller;
 
 import com.careless.config.security.service.UserDetailsServiceImpl;
 import com.careless.dto.JwtResponse;
-import com.careless.dto.User;
 import com.careless.dto.UserCredentials;
-import com.careless.service.UserService;
+import com.careless.model.Person;
+import com.careless.service.PersonService;
 import java.util.List;
 import javax.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +21,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
 
   @Autowired UserDetailsServiceImpl userDetailsService;
-  @Autowired UserService userService;
+  @Autowired
+  PersonService personService;
 
   @PostMapping("/register")
   public JwtResponse registerNewUser(@Valid @RequestBody UserCredentials credentials) {
@@ -35,9 +36,9 @@ public class UserController {
 
   @GetMapping("/list")
   @PreAuthorize("hasRole('USER')")
-  public List<User> findAllUsersByUsername(
+  public List<Person> findAllUsersByUsername(
       @RequestParam(name = "username", defaultValue = "") String username,
       @RequestParam(name = "page", defaultValue = "0") int page) {
-    return userService.getAvailableUsers(username, page);
+    return personService.getAvailableUsers(username, page);
   }
 }
